@@ -15,24 +15,18 @@ fn handle_connection(mut stream: TcpStream) {
     let mut buffer = [0; 1024]; //1024个0
     stream.read(&mut buffer).unwrap();
     println!("{}", String::from_utf8_lossy(&buffer[..]));
-    let get_req = b"GET / HTTP/1.1\r\n";
-    if buffer.starts_with(get_req) {
-        let contents = fs::read_to_string("hello.html").unwrap();
-        let response = format!(
-            "HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{}",
-            contents.len(),
-            contents
-        );
-        stream.write(response.as_bytes()).unwrap();
-        stream.flush().unwrap();
+    let (res_page, res_code) = if buffer.starts_with(b"GET / HTTP/1.1\r\n") {
+        ("hello.html", 200)
     } else {
-        let contents = fs::read_to_string("404.html").unwrap();
-        let response = format!(
-            "HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{}",
-            contents.len(),
-            contents
-        );
-        stream.write(response.as_bytes()).unwrap();
-        stream.flush().unwrap();
-    }
+        ("404.html", 404)
+    };
+    let contents = fs::read_to_string(res_page).unwrap();
+    let response = format!(
+        "HTTP/1.1 {} OK\r\nContent-Length: {}\r\n\r\n{}",
+        res_code,
+        contents.len(),
+        contents
+    );
+    stream.write(response.as_bytes()).unwrap();
+    stream.flush().unwrap();
 }
